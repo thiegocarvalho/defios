@@ -1,0 +1,44 @@
+#!/bin/bash
+
+set -euo pipefail
+
+# ==============================================================================
+#                 DefiOS Live OS Docker Hook (02-docker-setup.chroot)
+# ==============================================================================
+# This hook runs inside the chroot environment to enable and configure the
+# Docker daemon to start on system boot.
+# ==============================================================================
+
+echo "======================================================"
+echo "    Executing DefiOS Docker Setup Hook                "
+echo "======================================================"
+
+# 1. ENABLE DOCKER SERVICE
+if systemctl list-unit-files | grep -q docker.service; then
+    echo "[+] Enabling Docker daemon service..."
+    systemctl enable docker
+    echo "  -> Docker daemon set to start on boot."
+else
+    echo "  [WARN] Docker daemon package is not installed or not found!"
+fi
+
+# 2. CONFIGURE DOCKER STORAGE OPTIMIZATION FOR LIVE RAM RUN
+# Since the system runs entirely in RAM, Docker containers should utilize optimal storage drivers.
+# Overlay2 is standard, but we limit resource utilization and log size to prevent RAM exhausting.
+echo "[+] Optimizing Docker config for RAM execution..."
+mkdir -p /etc/docker
+cat << 'EOF' > /etc/docker/daemon.json
+{
+  "log-driver": "json-file",
+  "log-opts": {
+    "max-size": "10m",
+    "max-file": "2"
+  },
+  "storage-driver": "overlay2"
+}
+EOF
+echo "  -> Docker daemon.json configuration created."
+
+echo "======================================================"
+echo "    DefiOS Docker Setup Hook Complete                 "
+echo "======================================================"

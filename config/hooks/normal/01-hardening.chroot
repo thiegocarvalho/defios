@@ -1,0 +1,228 @@
+#!/bin/bash
+
+set -euo pipefail
+
+# ==============================================================================
+#                 DefiOS Live OS Hardening Hook (01-hardening.chroot)
+# ==============================================================================
+# This hook runs inside the chroot environment during the OS construction phase.
+# It enforces strict network, kernel, service, and filesystem hardening.
+# ==============================================================================
+
+echo "======================================================"
+echo "    Executing DefiOS Hardening & Security Hook       "
+echo "======================================================"
+
+# 1. SYSCTL KERNEL & NETWORK HARDENING
+# Write strict configurations to prevent IP spoofing, MITM, SYN floods, etc.
+SYSCTL_CONF="/etc/sysctl.d/99-defios-hardening.conf"
+echo "[+] Configuring sysctl parameters at ${SYSCTL_CONF}..."
+
+cat << 'EOF' > "${SYSCTL_CONF}"
+# --- NETWORK DEFENSE & SECURITY ---
+
+# Enable TCP SYN Cookies to prevent SYN Flood attacks
+net.ipv4.tcp_syncookies = 1
+
+# Ignore ICMP Echo Broadcasts (smurf attack prevention)
+net.ipv4.icmp_echo_ignore_broadcasts = 1
+
+# Ignore bogus ICMP errors
+net.ipv4.icmp_ignore_bogus_error_responses = 1
+
+# Disable IP Source Routing (reject source routed packets)
+net.ipv4.conf.all.accept_source_route = 0
+net.ipv4.conf.default.accept_source_route = 0
+
+# Mitigate IP Spoofing (Enable Reverse Path Filtering)
+net.ipv4.conf.all.rp_filter = 1
+net.ipv4.conf.default.rp_filter = 1
+
+# Disable ICMP redirects (prevent man-in-the-middle redirection)
+net.ipv4.conf.all.accept_redirects = 0
+net.ipv4.conf.default.accept_redirects = 0
+net.ipv4.conf.all.secure_redirects = 0
+net.ipv4.conf.default.secure_redirects = 0
+
+# Prevent sending ICMP redirects
+net.ipv4.conf.all.send_redirects = 0
+net.ipv4.conf.default.send_redirects = 0
+
+# --- IPV6 SECURITY ---
+
+# Completely disable IPv6 to reduce network attack surface
+net.ipv6.conf.all.disable_ipv6 = 1
+net.ipv6.conf.default.disable_ipv6 = 1
+net.ipv6.conf.lo.disable_ipv6 = 1
+
+# --- KERNEL LOGGING & PROTECTION ---
+
+# Restrict dmesg access to root only (hides kernel addresses/info from standard users)
+kernel.dmesg_restrict = 1
+
+# Hide kernel symbol addresses in /proc
+kernel.kptr_restrict = 2
+
+# Disable unprivileged eBPF to prevent local privilege escalation
+kernel.unprivileged_bpf_disabled = 1
+
+# Restrict performance events (perf) from unprivileged users
+kernel.perf_event_paranoid = 3
+
+# Protect hardlinks and symlinks from being exploited in temp folders (/tmp)
+fs.protected_hardlinks = 1
+fs.protected_symlinks = 1
+EOF
+
+# 2. FIREWALL (UFW) STRICTION
+# Enable UFW statically so it loads on system boot, with default deny incoming and allow outgoing
+echo "[+] Configuring UFW static firewall policy..."
+if [ -f /etc/ufw/ufw.conf ]; then
+    # Enable UFW at boot
+    sed -i 's/ENABLED=no/ENABLED=yes/g' /etc/ufw/ufw.conf
+    
+    # Configure default policies
+    sed -i 's/DEFAULT_INPUT_POLICY="DROP"/DEFAULT_INPUT_POLICY="DROP"/g' /etc/default/ufw 2>/dev/null || true
+    sed -i 's/DEFAULT_OUTPUT_POLICY="ACCEPT"/DEFAULT_OUTPUT_POLICY="ACCEPT"/g' /etc/default/ufw 2>/dev/null || true
+    sed -i 's/DEFAULT_FORWARD_POLICY="DROP"/DEFAULT_FORWARD_POLICY="DROP"/g' /etc/default/ufw 2>/dev/null || true
+    
+    echo "  -> Firewall set to ENABLED at boot."
+    echo "  -> Default Input: DROP, Default Output: ACCEPT"
+else
+    echo "  [WARN] UFW configuration not found! Installing default configs..."
+    mkdir -p /etc/ufw
+    cat << 'EOF' > /etc/ufw/ufw.conf
+ENABLED=yes
+LOGLEVEL=low
+EOF
+fi
+
+# Ensure UFW service is enabled statically at boot
+echo "[+] Enabling UFW systemd service..."
+if systemctl list-unit-files | grep -q ufw.service; then
+    systemctl enable ufw
+    echo "  -> ufw service enabled."
+else
+    echo "  [WARN] ufw service not found in systemd units!"
+fi
+
+# Explicitly enforce loopback traffic allowance at network startup
+echo "[+] Enforcing loopback interface (lo) rules for UFW..."
+mkdir -p /etc/network/if-pre-up.d/
+cat << 'EOF' > /etc/network/if-pre-up.d/ufw-loopback-enforce
+#!/bin/sh
+# Enforce loopback traffic allowance when network comes up
+if command -v ufw >/dev/null 2>&1; then
+    ufw allow in on lo >/dev/null 2>&1 || true
+    ufw allow out on lo >/dev/null 2>&1 || true
+fi
+EOF
+chmod +x /etc/network/if-pre-up.d/ufw-loopback-enforce
+
+# 3. SSH HARDENING
+# Completely secure SSH if installed, disabling root login and password authentication
+echo "[+] Hardening SSH Daemon configurations..."
+if [ -f /etc/ssh/sshd_config ]; then
+    # Disable root login
+    sed -i 's/#\?PermitRootLogin.*/PermitRootLogin no/' /etc/ssh/sshd_config
+    # Disable password authentication
+    sed -i 's/#\?PasswordAuthentication.*/PasswordAuthentication no/' /etc/ssh/sshd_config
+    # Disable empty passwords
+    sed -i 's/#\?PermitEmptyPasswords.*/PermitEmptyPasswords no/' /etc/ssh/sshd_config
+    # Enable public key authentication
+    sed -i 's/#\?PubkeyAuthentication.*/PubkeyAuthentication yes/' /etc/ssh/sshd_config
+    
+    echo "  -> SSH: Root login and password authentication disabled."
+else
+    echo "  -> SSH daemon not installed, skipping configuration modification."
+fi
+
+# 4. ENABLE SYSTEM SERVICES ON BOOT
+echo "[+] Enabling Tor service..."
+if systemctl list-unit-files | grep -q tor.service; then
+    systemctl enable tor
+    echo "  -> Tor daemon enabled."
+else
+    echo "  [WARN] Tor service not found!"
+fi
+
+echo "[+] Enabling DefiOS Agent systemd service..."
+if systemctl list-unit-files | grep -q defios-agent.service; then
+    systemctl enable defios-agent
+    echo "  -> DefiOS Agent service enabled."
+else
+    echo "  [WARN] DefiOS Agent service not found in systemd units!"
+fi
+
+echo "[+] Enabling zram swap service..."
+if systemctl list-unit-files | grep -q zram-swap.service; then
+    systemctl enable zram-swap
+    echo "  -> zram-swap service enabled."
+else
+    echo "  [WARN] zram-swap service not found in systemd units!"
+fi
+
+# 5. USER ENVIRONMENT SECURITY
+# Secure /etc/securetty to limit root console logins and restrict permissions on sensitive files
+echo "[+] Restricting file permissions..."
+chmod 600 /etc/shadow || true
+chmod 600 /etc/gshadow || true
+
+# 6. SYSTEMD JOURNAL & RAM AUDIT CLEANUP
+# Limit systemd journal size to keep the system lightweight in RAM
+echo "[+] Configuring systemd journal size limitations in RAM..."
+mkdir -p /etc/systemd/journald.conf.d
+cat << 'EOF' > /etc/systemd/journald.conf.d/ram-limit.conf
+[Journal]
+Storage=volatile
+SystemMaxUse=16M
+EOF
+
+# 7. RAM & MOUNT POINT PROTECTIONS (TMPFS HARDENING)
+# Secure temporary directories to prevent execution of malicious binaries in RAM
+echo "[+] Securing /tmp and /dev/shm mount points in fstab..."
+cat << 'EOF' >> /etc/fstab
+tmpfs /tmp tmpfs defaults,noexec,nosuid,nodev,size=10% 0 0
+tmpfs /dev/shm tmpfs defaults,noexec,nosuid,nodev,size=5% 0 0
+EOF
+
+# 8. BROWSER KIOSK HARDENING (FIREFOX ENTERPRISE POLICIES)
+# Enforce strict privacy, HTTPS-only, and block telemetry/cache saving.
+echo "[+] Applying Firefox Enterprise Privacy Policies..."
+mkdir -p /etc/firefox/policies
+cat << 'EOF' > /etc/firefox/policies/policies.json
+{
+  "policies": {
+    "DisableTelemetry": true,
+    "DisableFirefoxStudies": true,
+    "DisablePocket": true,
+    "DisableDeveloperTools": true,
+    "DisableSafeMode": true,
+    "DisableProfileImport": true,
+    "NoDefaultBookmarks": true,
+    "OfferToSaveLogins": false,
+    "PasswordManagerEnabled": false,
+    "SearchSuggestEnabled": false,
+    "HttpsOnlyMode": "force_enabled",
+    "HardwareAcceleration": true,
+    "SanitizeOnShutdown": {
+      "Cache": true,
+      "Cookies": true,
+      "History": true,
+      "Sessions": true,
+      "SiteSettings": true,
+      "OfflineApps": true
+    },
+    "ExtensionSettings": {
+      "*": {
+        "installation_mode": "blocked"
+      }
+    }
+  }
+}
+EOF
+echo "  -> Firefox policies.json injected."
+
+echo "======================================================"
+echo "    DefiOS Hardening Hook Complete                    "
+echo "======================================================"

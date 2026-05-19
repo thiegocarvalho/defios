@@ -1,0 +1,29 @@
+#!/bin/sh
+
+# ==============================================================================
+#                      IceWM Kiosk Startup Script (.icewm/startup)
+# ==============================================================================
+# Placed in /etc/skel/ so it populates into the live 'user' home directory.
+# Runs automatically when IceWM initializes. It secures screen display settings
+# and opens the local Setup Wizard in full screen Kiosk Mode.
+# ==============================================================================
+
+# 1. Disable screen blanking, screensaver, and power management (DPMS)
+# Essential to prevent the kiosk display from locking or sleeping.
+xset s off &
+xset s noblank &
+xset -dpms &
+
+# 2. Wait until the DefiOS Agent is active before launching the browser
+# This prevents displaying a browser connection error page if X11 loads faster than the agent daemon.
+echo "Waiting for DefiOS Agent Setup Wizard..."
+for i in $(seq 1 30); do
+    if curl -s -I http://127.0.0.1 >/dev/null || curl -s -I http://127.0.0.1:8080 >/dev/null; then
+        echo "DefiOS Agent found!"
+        break
+    fi
+    sleep 0.5
+done
+
+# 3. Launch Firefox in secure Kiosk mode (Private window) pointing to the local Wizard
+firefox-esr --kiosk --private-window http://127.0.0.1

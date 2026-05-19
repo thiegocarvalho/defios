@@ -1,0 +1,37 @@
+#!/bin/sh
+
+set -e
+
+# ==============================================================================
+#                      DefiOS Live OS Config Script (auto/config)
+# ==============================================================================
+# This script initializes the live-build config parameters for a custom,
+# minimal Debian Bookworm Live OS tailored for amnesic and secure crypto usage.
+# ==============================================================================
+
+lb config noauto \
+    --mode "debian" \
+    --distribution "bookworm" \
+    --architectures "amd64" \
+    --linux-flavours "amd64" \
+    --archive-areas "main contrib non-free non-free-firmware" \
+    --security "true" \
+    --updates "true" \
+    --backports "true" \
+    --apt-indices "false" \
+    --apt-recommends "false" \
+    --debian-installer "false" \
+    --debian-installer-distribution "false" \
+    --memtest "none" \
+    --win32-loader "false" \
+    --image-name "defios-secure-live" \
+    --squashfs-compression "zstd" \
+    --squashfs-options "-Xcompression-level 19" \
+    --bootappend-live "boot=live components locales=en_US.UTF-8 keyboard-layouts=us quiet splash persistence-encryption=luks integrity-check nofastboot toram" \
+    "${@}"
+
+# Note on flags:
+# - quiet splash: Clean boot output
+# - toram: Copies the entire OS image into RAM on boot, enabling fast amnesic speed and allowing physical media ejection.
+# - persistence-encryption=luks: Tells the system how to look for encrypted persistence partitions.
+# - integrity-check: Validates squashfs image integrity during boot.

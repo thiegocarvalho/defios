@@ -1,0 +1,24 @@
+# ==============================================================================
+#                      nodm Display Manager Config (/etc/default/nodm)
+# ==============================================================================
+# This configuration forces nodm to automatically log in the default live
+# Debian user ('user') straight into the graphic environment without credentials.
+# ==============================================================================
+
+# Controls whether nodm should be started or not
+NODM_ENABLED=true
+
+# User to automatically log in
+NODM_USER=user
+
+# X session to run (defaults to the system-wide default session)
+NODM_XSESSION=/etc/X11/Xsession
+
+# X virtual terminal to run on
+NODM_FIRST_VT=7
+
+# Options for the X server (disable listening to TCP connections for security)
+NODM_X_OPTIONS="-nolisten tcp -nocursor"
+
+# Minimum time (in seconds) that a session must last to not be considered a crash
+NODM_MIN_SESSION_TIME=60

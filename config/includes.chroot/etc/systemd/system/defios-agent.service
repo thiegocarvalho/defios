@@ -1,0 +1,25 @@
+# ==============================================================================
+#                      DefiOS Agent Systemd Service Configuration
+# ==============================================================================
+# Placed in /etc/systemd/system/ to enable running the defios-agent automatically
+# as a background daemon with root privileges. This permits binding to port 80
+# and performing cryptographic disk mounting (LUKS).
+# ==============================================================================
+
+[Unit]
+Description=DefiOS Cryptographic Agent (Bun + Elysia)
+After=network.target tor.service docker.service
+Wants=tor.service
+
+[Service]
+Type=simple
+WorkingDirectory=/opt/defios-agent
+Environment="PATH=/root/.bun/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+ExecStart=/root/.bun/bin/bun run src/index.ts
+Restart=always
+RestartSec=3
+StandardOutput=journal+console
+StandardError=journal+console
+
+[Install]
+WantedBy=multi-user.target

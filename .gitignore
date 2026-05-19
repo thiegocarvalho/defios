@@ -1,0 +1,32 @@
+# ==============================================================================
+#                  DefiOS Builder GitIgnore Configuration
+# ==============================================================================
+
+# Debian live-build temporary & build environments
+.build/
+chroot/
+binary/
+local/
+cache/
+
+# Final generated CD/USB Live OS images
+*.iso
+*.iso.zsync
+*.contents
+*.files
+*.packages
+*.map
+
+# Python artifacts
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+
+# Logs & temp files
+*.log
+*.tmp
+.DS_Store
+.idea/
+.vscode/

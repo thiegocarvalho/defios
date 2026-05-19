@@ -1,0 +1,40 @@
+name: Build DefiOS ISO
+
+on:
+  repository_dispatch:
+    types: [trigger-iso-build]
+  workflow_dispatch: # Allows manual trigger from GitHub UI
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    # live-build requires root privileges to chroot and bind-mount filesystems
+    container:
+      image: debian:bookworm
+      options: --privileged
+
+    steps:
+      - name: Install Build Dependencies
+        run: |
+          apt-get update
+          apt-get install -y git make live-build debootstrap squashfs-tools curl unzip ca-certificates
+
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Configure and Build ISO
+        env:
+          DEBIAN_FRONTEND: noninteractive
+        run: |
+          # The builder relies on the Makefile or direct lb commands
+          make clean || lb clean
+          make config || lb config
+          make build || lb build
+
+      - name: Upload ISO to Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: "v${{ github.run_id }}"
+          name: "DefiOS Live OS Build"
+          files: "*.iso"
+          body: "Automated DefiOS ISO build generated from the latest catalog/agent updates."

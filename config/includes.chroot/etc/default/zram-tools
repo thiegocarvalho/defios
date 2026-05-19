@@ -1,0 +1,21 @@
+# ==============================================================================
+#                      zram-tools Configuration (/etc/default/zram-tools)
+# ==============================================================================
+# Placed in /etc/default/ to dynamically allocate and configure a high-speed
+# compressed swap space in RAM. Vital for optimizing execution in virtual
+# machines and physical hardware with limited RAM.
+# ==============================================================================
+
+# Enable zram swap
+CORES=4
+
+# Compression algorithm to use (zstd provides the best balance of speed and ratio)
+# Fallbacks: lzo-rle, lzo, lz4
+ALGO=zstd
+
+# Amount of RAM allocated to zram swap
+# Can be a percentage (e.g. 60%) or a static size in MiB (e.g. 2048)
+PERCENT=60
+
+# Priority of the zram swap device (should be high, e.g. 100)
+PRIORITY=100

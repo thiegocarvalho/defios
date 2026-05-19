@@ -1,0 +1,52 @@
+# ==============================================================================
+#                      DefiOS Live OS Package List (defios.list.chroot)
+# ==============================================================================
+# Declares all packages pre-installed in the final live squashfs. Keep it minimal
+# to ensure it runs entirely and efficiently in RAM.
+# ==============================================================================
+
+# Core System & Hardware Drivers
+linux-image-amd64
+live-boot
+live-config
+live-config-systemd
+firmware-linux-free
+firmware-linux-nonfree
+firmware-realtek
+firmware-atheros
+firmware-iwlwifi
+firmware-libertas
+firmware-brcm80211
+intel-microcode
+amd64-microcode
+sudo
+ca-certificates
+curl
+pciutils
+usbutils
+udev
+
+# Memory & VM Performance Optimization
+zram-tools
+
+# Security, Network & Tor
+tor
+ufw
+iptables
+cryptsetup
+cryptsetup-bin
+docker.io
+
+# X11 & Graphics Layer (Ultra-Minimal)
+xserver-xorg
+xserver-xorg-video-all
+xserver-xorg-input-all
+xserver-xorg-core
+xinit
+dbus-x11
+x11-xserver-utils
+nodm
+
+# Window Manager & User Space (Kiosk Target)
+icewm
+firefox-esr

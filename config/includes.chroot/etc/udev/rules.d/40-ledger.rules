@@ -1,0 +1,26 @@
+# ==============================================================================
+#                      Ledger Hardware Wallet Udev Rules (40-ledger.rules)
+# ==============================================================================
+# Allows non-root access to Ledger devices (Nano S, Nano X, Nano S Plus, Blue)
+# within the live OS environment using the systemd 'uaccess' tag.
+# ==============================================================================
+
+# Ledger Blue
+SUBSYSTEMS=="usb", ATTRS{idVendor}=="2c97", ATTRS{idProduct}=="0000", TAG+="uaccess", RUN+="/lib/udev/hwdb-apply"
+KERNEL=="hidraw*", ATTRS{idVendor}=="2c97", ATTRS{idProduct}=="0000", TAG+="uaccess"
+
+# Ledger Nano S
+SUBSYSTEMS=="usb", ATTRS{idVendor}=="2c97", ATTRS{idProduct}=="0001", TAG+="uaccess", RUN+="/lib/udev/hwdb-apply"
+KERNEL=="hidraw*", ATTRS{idVendor}=="2c97", ATTRS{idProduct}=="0001", TAG+="uaccess"
+
+# Ledger Nano X
+SUBSYSTEMS=="usb", ATTRS{idVendor}=="2c97", ATTRS{idProduct}=="0004", TAG+="uaccess", RUN+="/lib/udev/hwdb-apply"
+KERNEL=="hidraw*", ATTRS{idVendor}=="2c97", ATTRS{idProduct}=="0004", TAG+="uaccess"
+
+# Ledger Nano S Plus
+SUBSYSTEMS=="usb", ATTRS{idVendor}=="2c97", ATTRS{idProduct}=="0005", TAG+="uaccess", RUN+="/lib/udev/hwdb-apply"
+KERNEL=="hidraw*", ATTRS{idVendor}=="2c97", ATTRS{idProduct}=="0005", TAG+="uaccess"
+
+# Generic Ledger vendor identification fallback rule
+SUBSYSTEMS=="usb", ATTRS{idVendor}=="2c97", TAG+="uaccess"
+KERNEL=="hidraw*", ATTRS{idVendor}=="2c97", TAG+="uaccess"

@@ -1,0 +1,44 @@
+#!/bin/bash
+
+set -euo pipefail
+
+# ==============================================================================
+#                 DefiOS Agent Installation Hook (02-install-defios-agent)
+# ==============================================================================
+# This hook runs inside the chroot environment during the OS construction phase.
+# It installs Bun, clones the real defios-agent repository, and installs its
+# dependencies so it is ready to run as a systemd service.
+# ==============================================================================
+
+echo "======================================================"
+echo "    Executing DefiOS Agent Installation Hook          "
+echo "======================================================"
+
+# Install curl, unzip, and git if not already present
+apt-get update
+apt-get install -y curl unzip git
+
+echo "[+] Installing Bun JavaScript Runtime..."
+# Install bun globally
+curl -fsSL https://bun.sh/install | bash
+export PATH="/root/.bun/bin:$PATH"
+
+echo "[+] Cloning defios-agent repository..."
+mkdir -p /opt
+cd /opt
+# Fallback logic: if the user hasn't published it yet, this might fail,
+# but assuming standard GitOps, the builder will clone from the remote.
+git clone https://github.com/thiegocarvalho/defios-agent.git || echo "WARNING: Could not clone repository, ensure it is public or add credentials."
+
+if [ -d "/opt/defios-agent" ]; then
+    echo "[+] Installing defios-agent dependencies..."
+    cd /opt/defios-agent
+    bun install
+    echo "  -> Dependencies installed successfully."
+else
+    echo "  [ERROR] /opt/defios-agent does not exist! The agent will fail to start."
+fi
+
+echo "======================================================"
+echo "    DefiOS Agent Installation Complete                "
+echo "======================================================"

@@ -1,0 +1,16 @@
+# ==============================================================================
+#                      Trezor Hardware Wallet Udev Rules (51-trezor.rules)
+# ==============================================================================
+# Allows non-root access to Trezor devices (Trezor One, Model T, Safe 3)
+# within the live OS environment using the systemd 'uaccess' tag.
+# ==============================================================================
+
+# Trezor One
+SUBSYSTEMS=="usb", ATTRS{idVendor}=="534c", ATTRS{idProduct}=="0001", TAG+="uaccess"
+KERNEL=="hidraw*", ATTRS{idVendor}=="534c", ATTRS{idProduct}=="0001", TAG+="uaccess"
+
+# Trezor Model T / Safe 3 (bootloader & normal modes)
+SUBSYSTEMS=="usb", ATTRS{idVendor}=="1209", ATTRS{idProduct}=="53c0", TAG+="uaccess"
+KERNEL=="hidraw*", ATTRS{idVendor}=="1209", ATTRS{idProduct}=="53c0", TAG+="uaccess"
+SUBSYSTEMS=="usb", ATTRS{idVendor}=="1209", ATTRS{idProduct}=="53c1", TAG+="uaccess"
+KERNEL=="hidraw*", ATTRS{idVendor}=="1209", ATTRS{idProduct}=="53c1", TAG+="uaccess"
