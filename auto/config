@@ -25,8 +25,8 @@ lb config noauto \
     --memtest "none" \
     --win32-loader "false" \
     --image-name "defios-secure-live" \
-    --squashfs-compression "zstd" \
-    --squashfs-options "-Xcompression-level 19" \
+    --chroot-squashfs-compression-type "zstd" \
+    --chroot-squashfs-compression-level "19" \
     --bootappend-live "boot=live components locales=en_US.UTF-8 keyboard-layouts=us quiet splash persistence-encryption=luks integrity-check nofastboot toram" \
     "${@}"
 
