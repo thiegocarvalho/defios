@@ -6,4 +6,4 @@ set -e
 #                      DefiOS Live OS Build Hook (auto/build)
 # ==============================================================================
 
-lb build "${@}"
+lb build noauto "${@}"
