@@ -182,8 +182,8 @@ EOF
 # Secure temporary directories to prevent execution of malicious binaries in RAM
 echo "[+] Securing /tmp and /dev/shm mount points in fstab..."
 cat << 'EOF' >> /etc/fstab
-tmpfs /tmp tmpfs defaults,noexec,nosuid,nodev,size=10% 0 0
-tmpfs /dev/shm tmpfs defaults,noexec,nosuid,nodev,size=5% 0 0
+tmpfs /tmp tmpfs defaults,nosuid,nodev,size=20% 0 0
+tmpfs /dev/shm tmpfs defaults,nosuid,nodev,size=10% 0 0
 EOF
 
 # 8. BROWSER KIOSK HARDENING (FIREFOX ENTERPRISE POLICIES)
