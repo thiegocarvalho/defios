@@ -27,7 +27,7 @@ lb config noauto \
     --image-name "defios-secure-live" \
     --chroot-squashfs-compression-type "zstd" \
     --chroot-squashfs-compression-level "19" \
-    --bootappend-live "boot=live components locales=en_US.UTF-8 keyboard-layouts=us quiet splash persistence-encryption=luks integrity-check nofastboot toram" \
+    --bootappend-live "boot=live components locales=en_US.UTF-8 keyboard-layouts=us persistence-encryption=luks integrity-check nofastboot toram" \
     "${@}"
 
 # Note on flags:
